@@ -8,20 +8,39 @@ const wildcard = require('wildcard2')
 
 const util = require('./util.js')
 
-let defaults;
+const fs = require('fs').promises;
+const axios = require('axios');
+const path = require('path');
 
-// Asynchronous function to fetch defaults from a URL
-async function fetchDefaults() {
+// Function to fetch defaults based on the country code
+async function fetchDefaults(country) {
   try {
-    const response = await axios.get('https://gicpick.afosne.us.kg/glcpick/dns/refs/heads/main/hk'); // Replace with your URL
-    defaults = response.data;
+    let response;
+    if (country.toLowerCase() === 'local') {
+      // Read local file
+      const filePath = path.join(__dirname, 'config.afosne'); // Path to your local configuration file
+      const data = await fs.readFile(filePath, 'utf-8');
+      defaults = JSON.parse(data);
+    } else {
+      // Determine URL based on country parameter
+      const countryCode = country.toLowerCase();
+      const url = `https://gicpick.afosne.us.kg/glcpick/dns/refs/heads/main/${countryCode}`;
+      
+      // Fetch the defaults from the URL
+      response = await axios.get(url);
+      defaults = response.data;
+    }
   } catch (error) {
     console.error('Error fetching defaults:', error);
     process.exit(1);
   }
 }
 
-fetchDefaults().then(() => {
+// Main function to initialize and run
+async function main() {
+  const country = process.argv[2] || 'sg';  // Default to 'sg' if no argument is provided
+  await fetchDefaults(country);
+  
   const config = rc('dnsproxy', defaults);
 
 process.env.DEBUG_FD = process.env.DEBUG_FD || 1
